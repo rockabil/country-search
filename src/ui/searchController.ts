@@ -1,4 +1,6 @@
 import type { CountryCard, RawCountry } from '../core/mapCountryResponse';
+import { debounce } from '../core/debounce';
+import { mapCountryResponse } from '../core/mapCountryResponse';
 
 export type SearchState =
   | { kind: 'idle' }
@@ -18,11 +20,64 @@ export type SearchController = {
   dispose: () => void;
 };
 
-export function createSearchController(_options: {
+type Options = {
   search: SearchFn;
   onStateChange: (state: SearchState) => void;
   debounceMs?: number;
-}): SearchController {
-  void _options;
-  throw new Error('createSearchController: not implemented yet');
+};
+
+export function createSearchController(options: Options): SearchController {
+  const { search, onStateChange, debounceMs = 300 } = options;
+  let lastQuery = '';
+
+  const runSearch = async (query: string): Promise<void> => {
+    const controller = new AbortController();
+    try {
+      const raw = await search(query, controller.signal);
+      const countries = mapCountryResponse(raw);
+      if (countries.length === 0) {
+        onStateChange({ kind: 'empty', query });
+      } else {
+        onStateChange({ kind: 'results', query, countries });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      onStateChange({
+        kind: 'error',
+        query,
+        message,
+        retry: () => void runSearch(query),
+      });
+    }
+  };
+
+  const debouncedSearch = debounce((query: string) => {
+    void runSearch(query);
+  }, debounceMs);
+
+  const setQuery = (query: string): void => {
+    const trimmed = query.trim();
+    lastQuery = trimmed;
+
+    if (trimmed === '') {
+      debouncedSearch.cancel();
+      onStateChange({ kind: 'idle' });
+      return;
+    }
+
+    onStateChange({ kind: 'loading', query: trimmed });
+    debouncedSearch(trimmed);
+  };
+
+  const retry = (): void => {
+    if (lastQuery !== '') {
+      void runSearch(lastQuery);
+    }
+  };
+
+  const dispose = (): void => {
+    debouncedSearch.cancel();
+  };
+
+  return { setQuery, retry, dispose };
 }

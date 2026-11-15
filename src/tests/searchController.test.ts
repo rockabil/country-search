@@ -11,8 +11,11 @@ const rawJapan: RawCountry = {
   languages: [{ name: 'Japanese' }],
 };
 
-const flushPromises = (): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, 0));
+const flushPromises = async (): Promise<void> => {
+  for (let i = 0; i < 5; i++) {
+    await Promise.resolve();
+  }
+};
 
 describe('createSearchController', () => {
   beforeEach(() => {
