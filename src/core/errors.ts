@@ -3,7 +3,7 @@ export class HttpError extends Error {
 
   constructor(status: number, message: string) {
     super(message);
-    void status;
-    throw new Error('HttpError: not implemented yet');
+    this.name = 'HttpError';
+    this.status = status;
   }
 }
