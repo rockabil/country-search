@@ -17,8 +17,14 @@ export type RawCountry = {
 };
 
 export function mapCountryResponse(
-  _raw: ReadonlyArray<RawCountry>
+  raw: ReadonlyArray<RawCountry>
 ): CountryCard[] {
-  void _raw;
-  throw new Error('mapCountryResponse: not implemented yet');
+  return raw.map((country) => ({
+    name: country.name,
+    flagUrl: country.flags?.png ?? '',
+    capital: country.capital ?? '',
+    region: country.region,
+    population: country.population ?? 0,
+    languages: (country.languages ?? []).map((lang) => lang.name),
+  }));
 }
