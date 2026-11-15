@@ -26,14 +26,40 @@ type Options = {
   debounceMs?: number;
 };
 
+const isAbortError = (err: unknown): boolean =>
+  err instanceof DOMException && err.name === 'AbortError';
+
+const errorMessage = (err: unknown): string => {
+  if (err instanceof Error && err.message !== '') {
+    return err.message;
+  }
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string' &&
+    (err as { message: string }).message !== ''
+  ) {
+    return (err as { message: string }).message;
+  }
+  return 'Unknown error';
+};
+
 export function createSearchController(options: Options): SearchController {
   const { search, onStateChange, debounceMs = 300 } = options;
   let lastQuery = '';
+  let currentController: AbortController | null = null;
 
   const runSearch = async (query: string): Promise<void> => {
+    currentController?.abort();
     const controller = new AbortController();
+    currentController = controller;
+
     try {
       const raw = await search(query, controller.signal);
+      if (controller.signal.aborted) {
+        return;
+      }
       const countries = mapCountryResponse(raw);
       if (countries.length === 0) {
         onStateChange({ kind: 'empty', query });
@@ -41,7 +67,10 @@ export function createSearchController(options: Options): SearchController {
         onStateChange({ kind: 'results', query, countries });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (isAbortError(err)) {
+        return;
+      }
+      const message = errorMessage(err);
       onStateChange({
         kind: 'error',
         query,
@@ -60,10 +89,15 @@ export function createSearchController(options: Options): SearchController {
     lastQuery = trimmed;
 
     if (trimmed === '') {
+      currentController?.abort();
+      currentController = null;
       debouncedSearch.cancel();
       onStateChange({ kind: 'idle' });
       return;
     }
+
+    currentController?.abort();
+    currentController = null;
 
     onStateChange({ kind: 'loading', query: trimmed });
     debouncedSearch(trimmed);
@@ -76,6 +110,8 @@ export function createSearchController(options: Options): SearchController {
   };
 
   const dispose = (): void => {
+    currentController?.abort();
+    currentController = null;
     debouncedSearch.cancel();
   };
 
