@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createSearchController } from '../ui/searchController';
 import type { RawCountry } from '../core/mapCountryResponse';
+import { HttpError } from '../core/errors';
 
 const rawJapan: RawCountry = {
   name: 'Japan',
@@ -101,5 +102,100 @@ describe('createSearchController', () => {
     expect(last.kind).toBe('error');
     expect(last.message).toBe('network down');
     expect(typeof last.retry).toBe('function');
+  });
+
+  it('aborts the previous request when a new query arrives', async () => {
+    const signals: AbortSignal[] = [];
+    const search = vi
+      .fn()
+      .mockImplementation((_q: string, signal: AbortSignal) => {
+        signals.push(signal);
+        return new Promise<ReadonlyArray<RawCountry>>(() => {});
+      });
+    const ctrl = createSearchController({
+      search,
+      onStateChange: () => {},
+      debounceMs: 10,
+    });
+
+    ctrl.setQuery('sp');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(signals).toHaveLength(1);
+
+    ctrl.setQuery('spain');
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
+  });
+
+  it('does not emit error when the request is aborted by a new query', async () => {
+    const states: Array<{ kind: string }> = [];
+    const search = vi
+      .fn()
+      .mockImplementation((_q: string, signal: AbortSignal) => {
+        return new Promise<ReadonlyArray<RawCountry>>((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+    const ctrl = createSearchController({
+      search,
+      onStateChange: (s) => states.push(s as { kind: string }),
+      debounceMs: 10,
+    });
+
+    ctrl.setQuery('sp');
+    await vi.advanceTimersByTimeAsync(10);
+    ctrl.setQuery('spain');
+    await vi.advanceTimersByTimeAsync(10);
+    await flushPromises();
+
+    expect(states.some((s) => s.kind === 'error')).toBe(false);
+  });
+
+  it('emits error with message on TimeoutError', async () => {
+    const states: Array<{ kind: string; message?: string }> = [];
+    const search = vi
+      .fn()
+      .mockRejectedValue(
+        new DOMException('The operation timed out', 'TimeoutError')
+      );
+    const ctrl = createSearchController({
+      search,
+      onStateChange: (s) =>
+        states.push(s as { kind: string; message?: string }),
+      debounceMs: 10,
+    });
+
+    ctrl.setQuery('japan');
+    await vi.advanceTimersByTimeAsync(10);
+    await flushPromises();
+
+    const last = states.at(-1);
+    expect(last?.kind).toBe('error');
+    expect(last?.message).toBe('The operation timed out');
+  });
+
+  it('emits error with message on HttpError', async () => {
+    const states: Array<{ kind: string; message?: string }> = [];
+    const search = vi
+      .fn()
+      .mockRejectedValue(new HttpError(503, 'Service unavailable'));
+    const ctrl = createSearchController({
+      search,
+      onStateChange: (s) =>
+        states.push(s as { kind: string; message?: string }),
+      debounceMs: 10,
+    });
+
+    ctrl.setQuery('japan');
+    await vi.advanceTimersByTimeAsync(10);
+    await flushPromises();
+
+    const last = states.at(-1);
+    expect(last?.kind).toBe('error');
+    expect(last?.message).toBe('Service unavailable');
   });
 });
