@@ -12,7 +12,9 @@ export async function searchCountries(
 ): Promise<ReadonlyArray<RawCountry>> {
   void timeoutMs;
   const url = `${API_BASE}/${encodeURIComponent(query)}`;
-  const response = await fetch(url, { signal });
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const compositeSignal = AbortSignal.any([signal, timeoutSignal]);
+  const response = await fetch(url, { signal: compositeSignal });
 
   if (response.status === 404) {
     return [];
