@@ -90,4 +90,53 @@ describe('searchCountries', () => {
       searchCountries('japan', new AbortController().signal)
     ).rejects.toBe(abortErr);
   });
+
+  it('propagates TimeoutError from fetch as-is', async () => {
+    const timeoutErr = new DOMException('Timed out', 'TimeoutError');
+    fetchMock.mockRejectedValue(timeoutErr);
+
+    await expect(
+      searchCountries('japan', new AbortController().signal)
+    ).rejects.toBe(timeoutErr);
+  });
+
+  it('aborts fetch with TimeoutError when timeout elapses', async () => {
+    let capturedSignal: AbortSignal | undefined;
+
+    fetchMock.mockImplementation((_url: string, init: RequestInit) => {
+      capturedSignal = init.signal as AbortSignal;
+      return new Promise((_resolve, reject) => {
+        capturedSignal?.addEventListener('abort', () => {
+          reject(capturedSignal?.reason);
+        });
+      });
+    });
+
+    await expect(
+      searchCountries('japan', new AbortController().signal, 20)
+    ).rejects.toMatchObject({ name: 'TimeoutError' });
+  });
+
+  it('caller abort produces AbortError, not TimeoutError', async () => {
+    let capturedSignal: AbortSignal | undefined;
+
+    fetchMock.mockImplementation((_url: string, init: RequestInit) => {
+      capturedSignal = init.signal as AbortSignal;
+      return new Promise((_resolve, reject) => {
+        capturedSignal?.addEventListener('abort', () => {
+          reject(capturedSignal?.reason);
+        });
+      });
+    });
+
+    const controller = new AbortController();
+    const promise = searchCountries('japan', controller.signal, 10_000);
+    const assertion = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    controller.abort();
+
+    await assertion;
+  });
 });
