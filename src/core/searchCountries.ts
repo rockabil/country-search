@@ -1,5 +1,5 @@
-import type { RawCountry } from './mapCountryResponse';
-import { HttpError } from './errors';
+import type { RawCountry } from './mapCountryResponse.js';
+import { HttpError } from './errors.js';
 
 export const DEFAULT_TIMEOUT_MS = 5000;
 

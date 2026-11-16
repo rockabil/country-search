@@ -1,4 +1,4 @@
-import type { SearchState } from './searchController';
+import type { SearchState } from './searchController.js';
 
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,

@@ -1,6 +1,6 @@
-import type { CountryCard, RawCountry } from '../core/mapCountryResponse';
-import { debounce } from '../core/debounce';
-import { mapCountryResponse } from '../core/mapCountryResponse';
+import type { CountryCard, RawCountry } from '../core/mapCountryResponse.js';
+import { debounce } from '../core/debounce.js';
+import { mapCountryResponse } from '../core/mapCountryResponse.js';
 
 export type SearchState =
   | { kind: 'idle' }
