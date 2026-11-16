@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bg-top: #0b1a33;
+  --bg-bottom: #050914;
+  --text: #e8eefc;
+  --text-muted: #a9b4cc;
+  --border: #23304f;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-bg-hover: rgba(255, 255, 255, 0.08);
+  --error-border: #ff6b6b;
+  --error-bg: rgba(255, 107, 107, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: #34456b;
+  --accent: #5b8cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 3rem;
+}
+
+.app h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.75rem;
+  letter-spacing: 0.01em;
+}
+
+input[type='search'] {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input[type='search']::placeholder {
+  color: var(--text-muted);
+}
+
+input[type='search']:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.25);
+}
+
+.country-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.country-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 0.4rem 0.9rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.country-card:hover {
+  background: var(--card-bg-hover);
+  border-color: #2f4270;
+}
+
+.country-flag {
+  width: 64px;
+  height: auto;
+  border-radius: 4px;
+  grid-row: span 2;
+  display: block;
+}
+
+.country-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.country-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.status,
+.empty {
+  margin: 1.25rem 0 0;
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.error {
+  margin: 1.25rem 0 0;
+  padding: 1rem;
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  background: var(--error-bg);
+  color: #ffe2e2;
+}
+
+.error p {
+  margin: 0;
+}
+
+.error button {
+  padding: 0.45rem 1rem;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--error-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.error button:hover {
+  background: rgba(255, 107, 107, 0.15);
+}
